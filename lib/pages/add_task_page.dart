@@ -537,7 +537,9 @@ class _AddTaskPageState extends State<AddTaskPage> {
                           ),
                         );
                         taskBox.put(newTask.id, newTask);
-                        scheduleTaskNotifications(newTask);
+                        NotificationService.requestPermission();
+                        onTaskCreated(newTask);
+
                         SnackBar(
                           backgroundColor: Colors.blue,
                           content: const Text(

@@ -295,6 +295,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                                                                       setState(
                                                                                         () {
                                                                                           task.delete();
+                                                                                          onTaskDeleted(
+                                                                                            task,
+                                                                                          );
                                                                                           ScaffoldMessenger.of(
                                                                                             context,
                                                                                           ).showSnackBar(
@@ -372,7 +375,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                                                                       onTaskCompleted(
                                                                                         task,
                                                                                       );
-
+                                                                                      onCheckboxTapped(
+                                                                                        task,
+                                                                                      );
                                                                                       ScaffoldMessenger.of(
                                                                                         // ignore: use_build_context_synchronously
                                                                                         context,

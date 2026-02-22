@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:to_do_app/data/constants.dart';
+import 'package:to_do_app/data/notification_service.dart';
 import 'package:to_do_app/models/task.dart';
 import 'package:to_do_app/pages/edit_task_page.dart';
 
@@ -329,6 +330,7 @@ class _HistoryPageState extends State<HistoryPage> {
                           );
                           if (delete == true) {
                             task.delete();
+                            onTaskDeleted(task);
                             // ignore: use_build_context_synchronously
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
@@ -504,6 +506,7 @@ class _HistoryPageState extends State<HistoryPage> {
                               if (delete == true) {
                                 setState(() {
                                   task.delete();
+                                  onTaskDeleted(task);
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                       backgroundColor: Colors.blue,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:to_do_app/data/constants.dart';
+import 'package:to_do_app/data/notification_service.dart';
 import 'package:to_do_app/data/notifiers.dart';
 import 'package:to_do_app/models/task.dart';
 import 'package:to_do_app/pages/nav_page.dart';
@@ -12,6 +13,7 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await NotificationService.init();
 
   tz.initializeTimeZones();
 

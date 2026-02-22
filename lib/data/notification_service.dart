@@ -1,305 +1,305 @@
 import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:to_do_app/models/task.dart';
+import 'package:timezone/data/latest_all.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 
-final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-    FlutterLocalNotificationsPlugin();
+import 'package:to_do_app/models/task.dart';
 
-Future<void> requestExactAlarmsPermission() async {
-  final androidPlugin = flutterLocalNotificationsPlugin
-      .resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin
-      >();
+// ─────────────────────────────────────────────────────────────────────────────
+// Channel constants
+// ─────────────────────────────────────────────────────────────────────────────
+const _kChannelId = 'task_channel';
+const _kChannelName = 'Task Notifications';
 
-  await androidPlugin?.requestExactAlarmsPermission();
-}
-
+// ─────────────────────────────────────────────────────────────────────────────
+// NotificationService
+// ─────────────────────────────────────────────────────────────────────────────
 class NotificationService {
+  NotificationService._();
+
   static final _plugin = FlutterLocalNotificationsPlugin();
+  static bool _initialized = false;
 
-  static Future<void> schedule({
-    required int id,
-    required String title,
-    required String body,
-    required DateTime dateTime,
-  }) async {
-    if (Platform.isAndroid) {
-      // Ask user to allow exact alarms (opens system settings if needed)
-      final androidPlugin = flutterLocalNotificationsPlugin
-          .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin
-          >();
-      await androidPlugin?.requestExactAlarmsPermission();
-    }
+  // ── Init ──────────────────────────────────────────────────────────────────
 
-    try {
-      // Try scheduling exact alarm
-      await flutterLocalNotificationsPlugin.zonedSchedule(
-        id: id,
-        title: title,
-        body: body,
-        scheduledDate: tz.TZDateTime.from(dateTime, tz.local),
-        notificationDetails: NotificationDetails(
-          android: AndroidNotificationDetails(
-            'task_channel',
-            'Task Notifications',
-            importance: Importance.max,
-            priority: Priority.high,
-            icon: 'ic_notification',
-          ),
-        ),
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      );
-    } catch (e) {
-      // If exact alarms are denied, fallback to inexact
-      print("Exact alarms not permitted, scheduling inexact: $e");
-
-      await flutterLocalNotificationsPlugin.zonedSchedule(
-        id: id,
-        title: title,
-        body: body,
-        scheduledDate: tz.TZDateTime.from(dateTime, tz.local),
-        notificationDetails: NotificationDetails(
-          android: AndroidNotificationDetails(
-            'task_channel',
-            'Task Notifications',
-            importance: Importance.max,
-            priority: Priority.high,
-          ),
-        ),
-        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-      );
-    }
-  }
-
-  static Future<void> cancel(int id) async {
-    await _plugin.cancel(id: id);
-  }
-
-  /// Call once in main()
+  /// Call once inside `main()`, before `runApp()`.
+  ///
+  /// ```dart
+  /// void main() async {
+  ///   WidgetsFlutterBinding.ensureInitialized();
+  ///   await NotificationService.init();
+  ///   runApp(const MyApp());
+  /// }
+  /// ```
   static Future<void> init() async {
-    const androidSettings = AndroidInitializationSettings(
-      '@mipmap/ic_launcher',
-    );
+    if (_initialized) return;
 
-    const iosSettings = DarwinInitializationSettings(
-      requestAlertPermission: false,
+    // ── Timezones ────────────────────────────────────────────────────────────
+    tz_data.initializeTimeZones();
+
+    // Use the device's local timezone.
+    // Recommended: add `flutter_timezone` to pubspec.yaml, then do:
+    //   final String tzName = await FlutterTimezone.getLocalTimezone();
+    //   tz.setLocalLocation(tz.getLocation(tzName));
+    // For now, falling back to UTC:
+    tz.setLocalLocation(tz.UTC);
+
+    // ── Platform settings ────────────────────────────────────────────────────
+    const android = AndroidInitializationSettings('@mipmap/ic_launcher');
+
+    const darwin = DarwinInitializationSettings(
+      requestAlertPermission: false, // ask explicitly later
       requestBadgePermission: false,
       requestSoundPermission: false,
     );
 
-    const settings = InitializationSettings(
-      android: androidSettings,
-      iOS: iosSettings,
+    // v20: initialize() takes a named `settings` parameter
+    await _plugin.initialize(
+      settings: const InitializationSettings(android: android, iOS: darwin),
+      onDidReceiveNotificationResponse: _onNotificationTap,
     );
 
-    await _plugin.initialize(settings: settings);
+    _initialized = true;
   }
 
-  /// 🔐 Permission check (Android + iOS)
+  static void _onNotificationTap(NotificationResponse response) {
+    // Handle notification tap — e.g. navigate to the task detail screen.
+    // Use a GlobalKey<NavigatorState> or a router to navigate.
+  }
+
+  // ── Permissions ───────────────────────────────────────────────────────────
+
+  /// Returns `true` if the user has granted notification permission.
   static Future<bool> hasPermission() async {
     if (Platform.isAndroid) {
       final android = _plugin
           .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin
           >();
-
       return await android?.areNotificationsEnabled() ?? false;
     }
 
-    // iOS: no reliable runtime check → assume granted after request
     if (Platform.isIOS) {
-      return true;
+      // v20: renamed from IOSFlutterLocalNotificationsPlugin
+      final darwin = _plugin
+          .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin
+          >();
+      final settings = await darwin?.checkPermissions();
+      return settings?.isEnabled ?? false;
     }
 
     return false;
   }
 
-  /// Ask permission (call from settings page)
+  /// Asks the OS for notification permission.
+  /// Call this from your onboarding or settings screen.
   static Future<void> requestPermission() async {
-    await _plugin
-        .resolvePlatformSpecificImplementation<
-          IOSFlutterLocalNotificationsPlugin
-        >()
-        ?.requestPermissions(alert: true, badge: true, sound: true);
+    if (Platform.isAndroid) {
+      final android = _plugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
+      await android?.requestNotificationsPermission();
+      await android?.requestExactAlarmsPermission();
+    }
 
-    await _plugin
-        .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >()
-        ?.requestNotificationsPermission();
+    if (Platform.isIOS) {
+      final darwin = _plugin
+          .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin
+          >();
+      await darwin?.requestPermissions(alert: true, badge: true, sound: true);
+    }
   }
 
-  /// 🔔 Show notification safely
+  // ── Immediate notification ────────────────────────────────────────────────
+
+  /// Shows a notification immediately.
   static Future<void> show({
     required int id,
     required String title,
     required String body,
   }) async {
-    final allowed = await hasPermission();
-    if (!allowed) return; // 🚫 no permission → no noise
+    if (!await hasPermission()) return;
 
-    const details = NotificationDetails(
-      android: AndroidNotificationDetails(
-        'tasks_channel',
-        'Tasks',
-        importance: Importance.high,
-        priority: Priority.high,
-      ),
-      iOS: DarwinNotificationDetails(),
-    );
-
+    // v20: show() uses named parameters
     await _plugin.show(
       id: id,
       title: title,
       body: body,
-      notificationDetails: details,
+      notificationDetails: _buildDetails(),
+    );
+  }
+
+  // ── Scheduled notification ────────────────────────────────────────────────
+
+  /// Schedules a notification at [dateTime].
+  /// Silently skips past datetimes.
+  static Future<void> schedule({
+    required int id,
+    required String title,
+    required String body,
+    required DateTime dateTime,
+  }) async {
+    if (!await hasPermission()) return;
+
+    // Don't schedule in the past.
+    if (dateTime.isBefore(DateTime.now())) return;
+
+    final tzDate = tz.TZDateTime.from(dateTime, tz.local);
+
+    // Try exact alarm first, fall back to inexact if permission is denied.
+    try {
+      // v20: zonedSchedule() uses named parameters
+      await _plugin.zonedSchedule(
+        id: id,
+        title: title,
+        body: body,
+        scheduledDate: tzDate,
+        notificationDetails: _buildDetails(),
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      );
+    } on Exception catch (e) {
+      debugPrint('[NotificationService] Exact alarm denied, using inexact: $e');
+
+      await _plugin.zonedSchedule(
+        id: id,
+        title: title,
+        body: body,
+        scheduledDate: tzDate,
+        notificationDetails: _buildDetails(),
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      );
+    }
+  }
+
+  // ── Cancel ────────────────────────────────────────────────────────────────
+
+  /// Cancels a single notification by id.
+  // v20: cancel() uses named `id` parameter
+  static Future<void> cancel(int id) => _plugin.cancel(id: id);
+
+  /// Cancels all pending notifications.
+  static Future<void> cancelAll() => _plugin.cancelAll();
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+
+  static NotificationDetails _buildDetails() {
+    return const NotificationDetails(
+      android: AndroidNotificationDetails(
+        _kChannelId,
+        _kChannelName,
+        importance: Importance.max,
+        priority: Priority.high,
+      ),
+      iOS: DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      ),
     );
   }
 }
 
-enum TaskAlertType { overdue, lessThan12h, lessThan48h, started, completed }
+// ─────────────────────────────────────────────────────────────────────────────
+// Task notification helpers
+// ─────────────────────────────────────────────────────────────────────────────
 
-TaskAlertType? getTaskAlert(Task task) {
-  final now = DateTime.now();
+/// Converts a task's string id into a stable positive int notification id.
+int _idFor(String taskId, {int offset = 0}) =>
+    (taskId.hashCode & 0x7fffffff) + offset;
 
-  if (task.isDone) return TaskAlertType.completed;
+/// Schedules up to 4 future notifications for a task:
+///   +1 → at exact end time   (overdue)
+///   +2 → 12 h before end
+///   +3 → 48 h before end
+///   +4 → at start time
+///
+/// Safe to call on both task create and update — old notifications are
+/// cancelled first so you never get duplicates.
+Future<void> scheduleTaskNotifications(Task task) async {
+  // Always cancel existing ones first to avoid duplicates on edit.
+  await cancelTaskNotifications(task);
 
-  if (now.isAfter(task.endsAt)) {
-    return TaskAlertType.overdue;
-  }
-
-  final hoursLeft = task.endsAt.difference(now).inHours;
-
-  if (hoursLeft <= 12) return TaskAlertType.lessThan12h;
-  if (hoursLeft <= 48) return TaskAlertType.lessThan48h;
-
-  if (now.isAfter(task.startsAt)) return TaskAlertType.started;
-
-  return null;
-}
-
-int notificationIdFromString(String value) {
-  return value.hashCode & 0x7fffffff; // always positive int
-}
-
-void notifyForTask(Task task) {
-  final alert = getTaskAlert(task);
-  if (alert == null) return;
-
-  switch (alert) {
-    case TaskAlertType.overdue:
-      NotificationService.show(
-        id: notificationIdFromString(task.id),
-        title: 'Task Overdue 🚨',
-        body: '${task.title} is overdue!',
-      );
-      break;
-
-    case TaskAlertType.lessThan12h:
-      NotificationService.show(
-        id: notificationIdFromString(task.id),
-        title: 'Urgent ⏰',
-        body: '${task.title} is due in less than 12 hours',
-      );
-      break;
-
-    case TaskAlertType.lessThan48h:
-      NotificationService.show(
-        id: notificationIdFromString(task.id),
-        title: 'Reminder 📌',
-        body: '${task.title} is due soon',
-      );
-      break;
-
-    case TaskAlertType.started:
-      NotificationService.show(
-        id: notificationIdFromString(task.id),
-        title: 'Task Started ▶️',
-        body: '${task.title} has started',
-      );
-      break;
-
-    case TaskAlertType.completed:
-      NotificationService.show(
-        id: notificationIdFromString(task.id),
-        title: 'Completed ✅',
-        body: 'You completed ${task.title}',
-      );
-      break;
-  }
-}
-
-void onTaskCompleted(Task task) async {
-  int notificationIdFromString(String value) {
-    return value.hashCode & 0x7fffffff; // always positive int
-  }
-
-  // Cancel pending reminders
-  for (int i = 1; i <= 4; i++) {
-    await NotificationService.cancel(notificationIdFromString(task.id) + i);
-  }
-
-  // Fire completion notification
-  try {
-    NotificationService.show(
-      id: notificationIdFromString(task.id),
-      title: 'Completed ✅',
-      body: 'You completed ${task.title}',
-    );
-  } catch (e) {
-    null;
-  }
-}
-
-void scheduleTaskNotifications(Task task) {
   final now = DateTime.now();
   final end = task.endsAt;
 
-  // 🔴 Overdue (at exact end time)
-  try {
-    NotificationService.schedule(
-      id: notificationIdFromString(task.id) + 1,
-      title: 'Task Overdue 🚨',
-      body: '${task.title} is overdue',
-      dateTime: end,
+  // 🔴 Overdue — fires at the exact moment the task ends.
+  await NotificationService.schedule(
+    id: _idFor(task.id, offset: 1),
+    title: 'Task Overdue 🚨',
+    body: '${task.title} is overdue!',
+    dateTime: end,
+  );
+
+  // 🟠 12-hour warning.
+  final twelveHourMark = end.subtract(const Duration(hours: 12));
+  if (twelveHourMark.isAfter(now)) {
+    await NotificationService.schedule(
+      id: _idFor(task.id, offset: 2),
+      title: 'Urgent ⏰',
+      body: '${task.title} is due in 12 hours',
+      dateTime: twelveHourMark,
     );
-  } catch (e) {
-    null;
   }
 
-  // 🟠 Less than 12 hours
-  try {
-    if (end.subtract(const Duration(hours: 12)).isAfter(now)) {
-      NotificationService.schedule(
-        id: notificationIdFromString(task.id) + 2,
-        title: 'Urgent ⏰',
-        body: '${task.title} is due in 12 hours',
-        dateTime: end.subtract(const Duration(hours: 12)),
-      );
-    }
-
-    // 🟡 Less than 48 hours
-    if (end.subtract(const Duration(hours: 48)).isAfter(now)) {
-      NotificationService.schedule(
-        id: notificationIdFromString(task.id) + 3,
-        title: 'Reminder 📌',
-        body: '${task.title} is due in 48 hours',
-        dateTime: end.subtract(const Duration(hours: 48)),
-      );
-    }
-
-    // ▶️ Started
-    if (task.startsAt.isAfter(now)) {
-      NotificationService.schedule(
-        id: notificationIdFromString(task.id) + 4,
-        title: 'Task Started ▶️',
-        body: '${task.title} has started',
-        dateTime: task.startsAt,
-      );
-    }
-  } catch (e) {
-    null;
+  // 🟡 48-hour warning.
+  final fortyEightHourMark = end.subtract(const Duration(hours: 48));
+  if (fortyEightHourMark.isAfter(now)) {
+    await NotificationService.schedule(
+      id: _idFor(task.id, offset: 3),
+      title: 'Reminder 📌',
+      body: '${task.title} is due in 48 hours',
+      dateTime: fortyEightHourMark,
+    );
   }
+
+  // ▶️ Started.
+  if (task.startsAt.isAfter(now)) {
+    await NotificationService.schedule(
+      id: _idFor(task.id, offset: 4),
+      title: 'Task Started ▶️',
+      body: '${task.title} has started',
+      dateTime: task.startsAt,
+    );
+  }
+}
+
+/// Cancels all scheduled notifications for [task].
+Future<void> cancelTaskNotifications(Task task) async {
+  for (int offset = 1; offset <= 4; offset++) {
+    await NotificationService.cancel(_idFor(task.id, offset: offset));
+  }
+}
+
+/// Call this when the user marks a task as complete.
+Future<void> onTaskCompleted(Task task) async {
+  // Cancel all pending reminders.
+  await cancelTaskNotifications(task);
+
+  // Fire an immediate completion notification.
+  await NotificationService.show(
+    id: _idFor(task.id),
+    title: 'Completed ✅',
+    body: 'You completed "${task.title}"',
+  );
+}
+
+void onTaskCreated(Task task) async {
+  await scheduleTaskNotifications(task);
+}
+
+void onTaskUpdated(Task task) async {
+  await scheduleTaskNotifications(task);
+}
+
+void onCheckboxTapped(Task task) async {
+  await onTaskCompleted(task);
+}
+
+void onTaskDeleted(Task task) async {
+  await cancelTaskNotifications(task);
 }

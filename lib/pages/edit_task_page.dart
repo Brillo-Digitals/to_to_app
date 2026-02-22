@@ -575,6 +575,7 @@ class _EditTaskPageState extends State<EditTaskPage> {
                           widget.task.updatedAt = DateTime.now();
                           widget.task.save();
                           scheduleTaskNotifications(widget.task);
+                          onTaskCreated(widget.task);
                         } else {
                           final uuid = Uuid();
                           String id = uuid.v4();
@@ -595,7 +596,7 @@ class _EditTaskPageState extends State<EditTaskPage> {
                             ),
                           );
                           taskBox.put(newTask.id, newTask);
-                          scheduleTaskNotifications(newTask);
+                          onTaskCreated(newTask);
                         }
                         updateExpandingList();
                         SnackBar(
