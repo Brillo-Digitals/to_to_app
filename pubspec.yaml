@@ -35,7 +35,6 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   hive_generator: ^2.0.1
   build_runner: ^2.4.13
-<<<<<<< HEAD
   flutter_launcher_icons: ^0.13.1
 
 
@@ -43,8 +42,6 @@ flutter_icons:
   android: true
   ios: true
   image_path: "assets/images/logo.png"
-=======
->>>>>>> 97d75aa791879a0651b25ea1a9159787fe60dc1e
 
 flutter:
 
