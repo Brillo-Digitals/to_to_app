@@ -35,7 +35,7 @@ Local storage / Hive
 🚀 Getting Started
 Clone the Repository
 ```Bash
-git https://github.com/Brillo-Digitals/to_to_app.git
+git clone https://github.com/Brillo-Digitals/to_to_app.git
 ```
 ```Bash
 cd todo-app
