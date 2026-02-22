@@ -155,24 +155,27 @@ String formatedTime(DateTime date) {
   return formattedDate;
 }
 
-Color getTaskColor(DateTime sdate, DateTime edate) {
-  DateTime start = sdate;
-  DateTime end = edate;
+Color getTaskColor(Task task) {
+  DateTime start = task.startsAt;
+  DateTime end = task.endsAt;
   DateTime now = DateTime.now();
 
-  if (now.isAfter(end)) {
-    return Colors.red;
-  }
+  if (task.isDone == false) {
+    if (now.isAfter(end)) {
+      return Colors.red;
+    }
 
-  if (now.isAfter(start)) {
-    return Colors.green;
+    if (now.isAfter(start)) {
+      return Colors.green;
+    }
   }
 
   return Colors.grey;
 }
 
-double getTaskContainerWidth(DateTime sdate, DateTime edate) {
-  if (taskhasStarted(sdate)) {
+double getTaskContainerWidth(Task task) {
+  DateTime sdate = task.startsAt;
+  if (taskhasStarted(sdate) && task.isDone == false) {
     return 3.0;
   }
   return 1.0;

@@ -183,8 +183,8 @@ class _HistoryPageState extends State<HistoryPage> {
           child: Container(
             decoration: boxDec(
               color: Theme.of(context).primaryColor,
-              borderColor: getTaskColor(task.startsAt, task.endsAt),
-              width: getTaskContainerWidth(task.startsAt, task.endsAt),
+              borderColor: getTaskColor(task),
+              width: getTaskContainerWidth(task),
             ),
             margin: const EdgeInsets.symmetric(vertical: 5),
             child: Padding(
@@ -393,8 +393,8 @@ class _HistoryPageState extends State<HistoryPage> {
           child: Container(
             decoration: boxDec(
               color: Theme.of(context).primaryColor,
-              borderColor: getTaskColor(task.startsAt, task.endsAt),
-              width: getTaskContainerWidth(task.startsAt, task.endsAt),
+              borderColor: getTaskColor(task),
+              width: getTaskContainerWidth(task),
             ),
             margin: const EdgeInsets.symmetric(vertical: 5),
             child: Padding(

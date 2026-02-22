@@ -145,13 +145,11 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                                         context,
                                                       ).primaryColor,
                                                       borderColor: getTaskColor(
-                                                        task.startsAt,
-                                                        task.endsAt,
+                                                        task,
                                                       ),
                                                       width:
                                                           getTaskContainerWidth(
-                                                            task.startsAt,
-                                                            task.endsAt,
+                                                            task,
                                                           ),
                                                     ),
                                                     margin: EdgeInsets.only(
@@ -183,9 +181,11 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                                             Row(
                                                               children: [
                                                                 Text(
-                                                                  taskhasStarted(
-                                                                        task.startsAt,
-                                                                      )
+                                                                  task.isDone
+                                                                      ? "Completed"
+                                                                      : taskhasStarted(
+                                                                          task.startsAt,
+                                                                        )
                                                                       ? getTimeRemaining(
                                                                           task.endsAt,
                                                                         )
