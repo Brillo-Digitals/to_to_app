@@ -11,7 +11,10 @@
         android:label="To Do"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+<<<<<<< HEAD
         android:roundIcon="@mipmap/ic_launcher_round"
+=======
+>>>>>>> 97d75aa791879a0651b25ea1a9159787fe60dc1e
         <activity
             android:name=".MainActivity"
             android:exported="true"

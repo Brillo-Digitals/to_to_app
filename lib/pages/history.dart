@@ -189,6 +189,7 @@ class _HistoryPageState extends State<HistoryPage> {
             child: Padding(
               padding: const EdgeInsets.all(10.0),
               child: Column(
+<<<<<<< HEAD
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Column(
@@ -218,11 +219,42 @@ class _HistoryPageState extends State<HistoryPage> {
                                   SizedBox(
                                     width: 80,
                                     child: Text(
+=======
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 17,
+                            backgroundColor:
+                                taskCategories[task.category]!['color']
+                                    as Color,
+                            child: Icon(
+                              taskCategories[task.category]!['icon']
+                                  as IconData,
+                              size: 20,
+                              color: Colors.white,
+                            ),
+                          ),
+                          SizedBox(width: 10),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SizedBox(
+                                width: 100,
+                                child: Wrap(
+                                  children: [
+                                    Text(
+>>>>>>> 97d75aa791879a0651b25ea1a9159787fe60dc1e
                                       task.title,
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 13,
                                       ),
+<<<<<<< HEAD
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
                                     ),
@@ -234,6 +266,19 @@ class _HistoryPageState extends State<HistoryPage> {
                                         style: TextStyle(fontSize: 5),
                                       ),
                                     ],
+=======
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Column(
+                                children: [
+                                  Text(
+                                    "${formatedTime(task.startsAt)} \nto ${formatedTime(task.endsAt)}",
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodySmall,
+>>>>>>> 97d75aa791879a0651b25ea1a9159787fe60dc1e
                                   ),
                                 ],
                               ),
@@ -241,6 +286,7 @@ class _HistoryPageState extends State<HistoryPage> {
                           ),
                         ],
                       ),
+<<<<<<< HEAD
                       Padding(
                         padding: const EdgeInsets.all(8.0),
                         child: SingleChildScrollView(
@@ -349,6 +395,113 @@ class _HistoryPageState extends State<HistoryPage> {
                         child: Icon(Icons.delete, size: 20),
                       ),
                     ],
+=======
+                      Column(
+                        children: [
+                          GestureDetector(
+                            onTap: () {
+                              showModalBottomSheet(
+                                context: context,
+                                isScrollControlled: true,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadiusGeometry.vertical(
+                                    top: Radius.circular(30),
+                                  ),
+                                ),
+                                builder: (context) {
+                                  return EditTaskPage(
+                                    task: task,
+                                    type: task.isDone
+                                        ? editReuseList[1]
+                                        : taskhasEnded(task.endsAt)
+                                        ? editReuseList[2]
+                                        : editReuseList[0],
+                                  );
+                                },
+                              );
+                            },
+                            child: Icon(
+                              task.isDone
+                                  ? Icons.autorenew
+                                  : taskhasEnded(task.endsAt)
+                                  ? Icons.event_repeat
+                                  : Icons.edit,
+                              size: 20,
+                            ),
+                          ),
+                          SizedBox(height: 10),
+                          GestureDetector(
+                            onTap: () async {
+                              final delete = await showDialog(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: Text("Delete Record"),
+                                  content: Text(
+                                    "Are you sure you want to delete this. This action cannot be undone.",
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () {
+                                        Navigator.of(context).pop(false);
+                                      },
+                                      child: Text(
+                                        "Cancel",
+                                        style: TextStyle(color: Colors.blue),
+                                      ),
+                                    ),
+                                    TextButton(
+                                      onPressed: () {
+                                        Navigator.of(context).pop(true);
+                                      },
+                                      child: Text(
+                                        "Delete",
+                                        style: TextStyle(color: Colors.red),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              if (delete == true) {
+                                task.delete();
+                                // ignore: use_build_context_synchronously
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    backgroundColor: Colors.blue,
+                                    content: const Text(
+                                      "Task deleted successfully",
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    duration: const Duration(seconds: 3),
+                                  ),
+                                );
+                              }
+                            },
+                            child: Icon(Icons.delete, size: 20),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: SingleChildScrollView(
+                      child: SizedBox(
+                        height: 100,
+                        child: Text(
+                          task.description,
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.w400,
+                                fontSize: 13,
+                              ),
+                        ),
+                      ),
+                    ),
+>>>>>>> 97d75aa791879a0651b25ea1a9159787fe60dc1e
                   ),
                 ],
               ),

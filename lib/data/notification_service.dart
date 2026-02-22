@@ -46,7 +46,10 @@ class NotificationService {
             'Task Notifications',
             importance: Importance.max,
             priority: Priority.high,
+<<<<<<< HEAD
             icon: 'ic_notification',
+=======
+>>>>>>> 97d75aa791879a0651b25ea1a9159787fe60dc1e
           ),
         ),
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
@@ -242,6 +245,7 @@ void onTaskCompleted(Task task) async {
   }
 
   // Fire completion notification
+<<<<<<< HEAD
   try {
     NotificationService.show(
       id: notificationIdFromString(task.id),
@@ -251,6 +255,13 @@ void onTaskCompleted(Task task) async {
   } catch (e) {
     null;
   }
+=======
+  NotificationService.show(
+    id: notificationIdFromString(task.id),
+    title: 'Completed ✅',
+    body: 'You completed ${task.title}',
+  );
+>>>>>>> 97d75aa791879a0651b25ea1a9159787fe60dc1e
 }
 
 void scheduleTaskNotifications(Task task) {
@@ -258,6 +269,7 @@ void scheduleTaskNotifications(Task task) {
   final end = task.endsAt;
 
   // 🔴 Overdue (at exact end time)
+<<<<<<< HEAD
   try {
     NotificationService.schedule(
       id: notificationIdFromString(task.id) + 1,
@@ -301,5 +313,42 @@ void scheduleTaskNotifications(Task task) {
     }
   } catch (e) {
     null;
+=======
+  NotificationService.schedule(
+    id: notificationIdFromString(task.id) + 1,
+    title: 'Task Overdue 🚨',
+    body: '${task.title} is overdue',
+    dateTime: end,
+  );
+
+  // 🟠 Less than 12 hours
+  if (end.subtract(const Duration(hours: 12)).isAfter(now)) {
+    NotificationService.schedule(
+      id: notificationIdFromString(task.id) + 2,
+      title: 'Urgent ⏰',
+      body: '${task.title} is due in 12 hours',
+      dateTime: end.subtract(const Duration(hours: 12)),
+    );
+  }
+
+  // 🟡 Less than 48 hours
+  if (end.subtract(const Duration(hours: 48)).isAfter(now)) {
+    NotificationService.schedule(
+      id: notificationIdFromString(task.id) + 3,
+      title: 'Reminder 📌',
+      body: '${task.title} is due in 48 hours',
+      dateTime: end.subtract(const Duration(hours: 48)),
+    );
+  }
+
+  // ▶️ Started
+  if (task.startsAt.isAfter(now)) {
+    NotificationService.schedule(
+      id: notificationIdFromString(task.id) + 4,
+      title: 'Task Started ▶️',
+      body: '${task.title} has started',
+      dateTime: task.startsAt,
+    );
+>>>>>>> 97d75aa791879a0651b25ea1a9159787fe60dc1e
   }
 }
