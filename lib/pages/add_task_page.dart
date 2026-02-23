@@ -540,7 +540,7 @@ class _AddTaskPageState extends State<AddTaskPage> {
                         NotificationService.requestPermission();
                         onTaskCreated(newTask);
 
-                        SnackBar(
+                        final successSnack = SnackBar(
                           backgroundColor: Colors.blue,
                           content: const Text(
                             "Task Added Successfully",
@@ -552,8 +552,14 @@ class _AddTaskPageState extends State<AddTaskPage> {
                           ),
                           duration: const Duration(seconds: 3),
                         );
+
+                        ScaffoldMessenger.of(
+                          context,
+                        ).showSnackBar(successSnack);
+
+                        Navigator.of(context).pop(newTask);
                       } else {
-                        SnackBar(
+                        final errorSnack = SnackBar(
                           backgroundColor: Colors.red,
                           content: const Text(
                             "Kindly input all the required fields",
@@ -565,6 +571,8 @@ class _AddTaskPageState extends State<AddTaskPage> {
                           ),
                           duration: const Duration(seconds: 3),
                         );
+
+                        ScaffoldMessenger.of(context).showSnackBar(errorSnack);
                       }
                     });
                   },

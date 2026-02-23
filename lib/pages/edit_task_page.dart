@@ -576,6 +576,24 @@ class _EditTaskPageState extends State<EditTaskPage> {
                           widget.task.save();
                           scheduleTaskNotifications(widget.task);
                           onTaskCreated(widget.task);
+                          final successSnack = SnackBar(
+                            backgroundColor: Colors.blue,
+                            content: const Text(
+                              "Task Added Successfully",
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            duration: const Duration(seconds: 3),
+                          );
+
+                          ScaffoldMessenger.of(
+                            context,
+                          ).showSnackBar(successSnack);
+
+                          Navigator.of(context).pop(widget.task);
                         } else {
                           final uuid = Uuid();
                           String id = uuid.v4();
@@ -597,22 +615,28 @@ class _EditTaskPageState extends State<EditTaskPage> {
                           );
                           taskBox.put(newTask.id, newTask);
                           onTaskCreated(newTask);
+                          final successSnack = SnackBar(
+                            backgroundColor: Colors.blue,
+                            content: const Text(
+                              "Task Added Successfully",
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            duration: const Duration(seconds: 3),
+                          );
+
+                          ScaffoldMessenger.of(
+                            context,
+                          ).showSnackBar(successSnack);
+
+                          Navigator.of(context).pop(newTask);
                         }
                         updateExpandingList();
-                        SnackBar(
-                          backgroundColor: Colors.blue,
-                          content: Text(
-                            "Task ${widget.type} Successfully!!!",
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          duration: const Duration(seconds: 3),
-                        );
                       } else {
-                        SnackBar(
+                        final errorSnack = SnackBar(
                           backgroundColor: Colors.red,
                           content: const Text(
                             "Kindly input all the required fields",
@@ -624,6 +648,8 @@ class _EditTaskPageState extends State<EditTaskPage> {
                           ),
                           duration: const Duration(seconds: 3),
                         );
+
+                        ScaffoldMessenger.of(context).showSnackBar(errorSnack);
                       }
                     });
                   },
