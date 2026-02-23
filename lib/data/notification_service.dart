@@ -7,46 +7,23 @@ import 'package:timezone/timezone.dart' as tz;
 
 import 'package:to_do_app/models/task.dart';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Channel constants
-// ─────────────────────────────────────────────────────────────────────────────
+
 const _kChannelId = 'task_channel';
 const _kChannelName = 'Task Notifications';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// NotificationService
-// ─────────────────────────────────────────────────────────────────────────────
+
 class NotificationService {
   NotificationService._();
 
   static final _plugin = FlutterLocalNotificationsPlugin();
   static bool _initialized = false;
 
-  // ── Init ──────────────────────────────────────────────────────────────────
-
-  /// Call once inside `main()`, before `runApp()`.
-  ///
-  /// ```dart
-  /// void main() async {
-  ///   WidgetsFlutterBinding.ensureInitialized();
-  ///   await NotificationService.init();
-  ///   runApp(const MyApp());
-  /// }
-  /// ```
   static Future<void> init() async {
     if (_initialized) return;
 
-    // ── Timezones ────────────────────────────────────────────────────────────
     tz_data.initializeTimeZones();
+    tz.setLocalLocation(tz.getLocation(tz.local.name));
 
-    // Use the device's local timezone.
-    // Recommended: add `flutter_timezone` to pubspec.yaml, then do:
-    //   final String tzName = await FlutterTimezone.getLocalTimezone();
-    //   tz.setLocalLocation(tz.getLocation(tzName));
-    // For now, falling back to UTC:
-    tz.setLocalLocation(tz.UTC);
-
-    // ── Platform settings ────────────────────────────────────────────────────
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
 
     const darwin = DarwinInitializationSettings(
@@ -55,7 +32,6 @@ class NotificationService {
       requestSoundPermission: false,
     );
 
-    // v20: initialize() takes a named `settings` parameter
     await _plugin.initialize(
       settings: const InitializationSettings(android: android, iOS: darwin),
       onDidReceiveNotificationResponse: _onNotificationTap,
@@ -68,8 +44,6 @@ class NotificationService {
     // Handle notification tap — e.g. navigate to the task detail screen.
     // Use a GlobalKey<NavigatorState> or a router to navigate.
   }
-
-  // ── Permissions ───────────────────────────────────────────────────────────
 
   /// Returns `true` if the user has granted notification permission.
   static Future<bool> hasPermission() async {
@@ -115,8 +89,6 @@ class NotificationService {
     }
   }
 
-  // ── Immediate notification ────────────────────────────────────────────────
-
   /// Shows a notification immediately.
   static Future<void> show({
     required int id,
@@ -133,8 +105,6 @@ class NotificationService {
       notificationDetails: _buildDetails(),
     );
   }
-
-  // ── Scheduled notification ────────────────────────────────────────────────
 
   /// Schedules a notification at [dateTime].
   /// Silently skips past datetimes.
@@ -176,8 +146,6 @@ class NotificationService {
     }
   }
 
-  // ── Cancel ────────────────────────────────────────────────────────────────
-
   /// Cancels a single notification by id.
   // v20: cancel() uses named `id` parameter
   static Future<void> cancel(int id) => _plugin.cancel(id: id);
@@ -185,7 +153,6 @@ class NotificationService {
   /// Cancels all pending notifications.
   static Future<void> cancelAll() => _plugin.cancelAll();
 
-  // ── Helpers ───────────────────────────────────────────────────────────────
 
   static NotificationDetails _buildDetails() {
     return const NotificationDetails(
@@ -203,10 +170,6 @@ class NotificationService {
     );
   }
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Task notification helpers
-// ─────────────────────────────────────────────────────────────────────────────
 
 /// Converts a task's string id into a stable positive int notification id.
 int _idFor(String taskId, {int offset = 0}) =>
@@ -227,7 +190,7 @@ Future<void> scheduleTaskNotifications(Task task) async {
   final now = DateTime.now();
   final end = task.endsAt;
 
-  // 🔴 Overdue — fires at the exact moment the task ends.
+  // Overdue — fires at the exact moment the task ends.
   await NotificationService.schedule(
     id: _idFor(task.id, offset: 1),
     title: 'Task Overdue 🚨',
@@ -235,7 +198,7 @@ Future<void> scheduleTaskNotifications(Task task) async {
     dateTime: end,
   );
 
-  // 🟠 12-hour warning.
+  // 12-hour warning.
   final twelveHourMark = end.subtract(const Duration(hours: 12));
   if (twelveHourMark.isAfter(now)) {
     await NotificationService.schedule(
@@ -246,7 +209,7 @@ Future<void> scheduleTaskNotifications(Task task) async {
     );
   }
 
-  // 🟡 48-hour warning.
+  // 48-hour warning.
   final fortyEightHourMark = end.subtract(const Duration(hours: 48));
   if (fortyEightHourMark.isAfter(now)) {
     await NotificationService.schedule(
@@ -257,7 +220,7 @@ Future<void> scheduleTaskNotifications(Task task) async {
     );
   }
 
-  // ▶️ Started.
+  // Started.
   if (task.startsAt.isAfter(now)) {
     await NotificationService.schedule(
       id: _idFor(task.id, offset: 4),
@@ -275,12 +238,11 @@ Future<void> cancelTaskNotifications(Task task) async {
   }
 }
 
-/// Call this when the user marks a task as complete.
+// Call this when the user marks a task as complete.
 Future<void> onTaskCompleted(Task task) async {
   // Cancel all pending reminders.
   await cancelTaskNotifications(task);
 
-  // Fire an immediate completion notification.
   await NotificationService.show(
     id: _idFor(task.id),
     title: 'Completed ✅',
